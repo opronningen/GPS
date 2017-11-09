@@ -97,7 +97,7 @@ namespace Range2RINEX
                         if (s.L1.locktime < interval)
                             L1LLI = 1;
 
-                        if (!s.L1.trackstat.ParityKnown)
+                        if (!s.L1.trackstat.ParityKnown || s.L1.trackstat.HalfCycleAdded)
                             L1LLI += 2;
                     }
 
@@ -133,7 +133,9 @@ namespace Range2RINEX
                             );
                     }
                     else
+                    {
                         Console.Write("{0, 64}", "");                               // No L1 - dummy blank
+                    }
 
                     if (s.L2 != null) {
                         snr = (int)Math.Min(Math.Max(Math.Round(s.L2.snr / 6.0), 0), 9);
