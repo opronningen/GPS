@@ -108,7 +108,7 @@ namespace Range2RINEX
                             L2LLI = 1;
 
                         // Bit 1, may have half-cycle ambiguity
-                        if (!s.L2.trackstat.ParityKnown)   
+                        if (!s.L2.trackstat.ParityKnown || s.L2.trackstat.HalfCycleAdded)   
                             L2LLI += 2;
 
                         // Signal type 5: L2P, 9: L2P (semi)codeless, 17: L2C

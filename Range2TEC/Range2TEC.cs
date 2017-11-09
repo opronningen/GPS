@@ -211,13 +211,15 @@ namespace Range2TEC
                     int prn = int.Parse(fields[i + 1]);
                     int glofreq = short.Parse(fields[i + 2]);
 
-                    Obs o = new Obs();
-                    o.psr = double.Parse(fields[i + 3]);
-                    o.adr = Math.Abs(double.Parse(fields[i + 5]));
-                    o.dopp = double.Parse(fields[i + 7]);
-                    o.snr = double.Parse(fields[i + 8]);
-                    o.locktime = float.Parse(fields[i + 9]);
-                    o.trackstat = ParseTrackingState(int.Parse(fields[i + 10], NumberStyles.HexNumber));
+                    Obs o = new Obs
+                    {
+                        psr = double.Parse(fields[i + 3]),
+                        adr = Math.Abs(double.Parse(fields[i + 5])),
+                        dopp = double.Parse(fields[i + 7]),
+                        snr = double.Parse(fields[i + 8]),
+                        locktime = float.Parse(fields[i + 9]),
+                        trackstat = ParseTrackingState(int.Parse(fields[i + 10], NumberStyles.HexNumber))
+                    };
 
                     // Do not use phasedata if !trackstat.parityknown
                     //if (!o.trackstat.ParityKnown)

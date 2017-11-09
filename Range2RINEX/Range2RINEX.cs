@@ -16,6 +16,8 @@ using System.IO;
  *      Handle GPS L2C
  *      Handle GPS L5
  *      Handle SBAS
+ *      Parse RangeCMP
+ *      Parse binary format
  * 
  */
 namespace Range2RINEX
@@ -56,10 +58,12 @@ namespace Range2RINEX
         public CorrelatorType Correlator = CorrelatorType.NA;
         public int SatelliteSystem = 0;
         public bool Grouped = false;
-        public int SignalType = 0;
+        public int SignalType = 0;              // GPS: 0 = L1 C/A, 5 = L2 P, 9 = L2 P codeless, 17 = L2C. GLONASS: 0 = L1 C/A, 5 = L2 P. SBAS: 0 = L1 C/A
         public bool FEC = false;
         public bool HalfCycleAdded = false;
-        public bool PrimaryL1 = false;
+        public bool PrimaryL1 = false;          // If 0, L2
+        public bool PRNlocked = false;
+        public bool ChannelForced = false;
     }
 
     class Obs
@@ -77,7 +81,7 @@ namespace Range2RINEX
     class Sat
     {
         public int PRN;     // For GPS, PRN. For GLONASS, slot-number.
-        public char System; // From RINEX-standard; G=GPS, R=GLONASS
+        public char System; // From RINEX-standard; G=GPS, R=GLONASS, S=SBAS
         public Obs L1;
         public Obs L2;
     }
@@ -96,44 +100,52 @@ namespace Range2RINEX
 
             // Tracking state
             s.trackingstate = (TrackingState)(state & 31);
-            state = state >> 5;
+            state >>= 5;
 
             // SV channel number
             s.SVchnum = state & 31;
-            state = state >> 5;
+            state >>= 5;
 
             s.Phaselock = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.ParityKnown = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.CodeLocked = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.Correlator = (CorrelatorType)(state & 7);
-            state = state >> 3;
+            state >>= 3;
 
             s.SatelliteSystem = (state & 7);
-            state = state >> 3;
+            state >>= 3;
 
             // Skip reserved bit
-            state = state >> 1;
+            state >>= 1;
 
             s.Grouped = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.SignalType = (state & 31);
-            state = state >> 5;
+            state >>= 5;
 
             s.FEC = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.PrimaryL1 = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
 
             s.HalfCycleAdded = (state & 1) > 0;
-            state = state >> 1;
+            state >>= 1;
+
+            // Skip reserved
+            state >>= 1;
+
+            s.PRNlocked = (state & 1) > 0;
+            state >>= 1;
+
+            s.ChannelForced = (state & 1) > 0;
 
             return s;
         }
@@ -227,19 +239,17 @@ namespace Range2RINEX
 
                     int glofreq = short.Parse(fields[i++])-7;
 
-                    Obs o = new Obs();
-                    o.psr = double.Parse(fields[i++]);
-                    o.psr_std = double.Parse(fields[i++]);
-                    o.adr = Math.Abs(double.Parse(fields[i++]));
-                    o.adr_std = double.Parse(fields[i++]);
-                    o.dopp = double.Parse(fields[i++]);
-                    o.snr = double.Parse(fields[i++]);
-                    o.locktime = float.Parse(fields[i++]);
-                    o.trackstat = ParseTrackingState(int.Parse(fields[i++], NumberStyles.HexNumber));
-
-                    // Do not use phasedata if !trackstat.parityknown
-                    //if (!o.trackstat.ParityKnown)
-                    //    o.adr = 0;
+                    Obs o = new Obs
+                    {
+                        psr = double.Parse(fields[i++]),
+                        psr_std = double.Parse(fields[i++]),
+                        adr = Math.Abs(double.Parse(fields[i++])),
+                        adr_std = double.Parse(fields[i++]),
+                        dopp = double.Parse(fields[i++]),
+                        snr = double.Parse(fields[i++]),
+                        locktime = float.Parse(fields[i++]),
+                        trackstat = ParseTrackingState(int.Parse(fields[i++], NumberStyles.HexNumber))
+                    };
 
                     // For now, accept only 0 (GPS) or 1 (GLONASS)
                     if (o.trackstat.SatelliteSystem > 1)
@@ -260,10 +270,12 @@ namespace Range2RINEX
                     Sat sat = e.SV.Find(s => (s.PRN == prn && s.System == system));
                     if (sat == null)
                     {
-                        sat = new Sat();
-                        sat.System = system;
+                        sat = new Sat
+                        {
+                            System = system,
+                            PRN = prn
+                        };
 
-                        sat.PRN = prn;
                         e.SV.Add(sat);
                     }
 
