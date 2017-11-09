@@ -5,11 +5,11 @@ using System.Runtime.InteropServices;
 // General Information about an assembly is controlled through the following
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
-[assembly: AssemblyTitle("GPS")]
+[assembly: AssemblyTitle("RemoveOutliers")]
 [assembly: AssemblyDescription("")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("")]
-[assembly: AssemblyProduct("GPS")]
+[assembly: AssemblyProduct("RemoveOutliers")]
 [assembly: AssemblyCopyright("Copyright ©  2017")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]
@@ -20,7 +20,7 @@ using System.Runtime.InteropServices;
 [assembly: ComVisible(false)]
 
 // The following GUID is for the ID of the typelib if this project is exposed to COM
-[assembly: Guid("91b3b36a-3801-4be9-8414-cf05a8ecf58c")]
+[assembly: Guid("13d1dc27-bf6f-403e-b3a1-4d205bbb1c87")]
 
 // Version information for an assembly consists of the following four values:
 //

@@ -4,10 +4,10 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{91B3B36A-3801-4BE9-8414-CF05A8ECF58C}</ProjectGuid>
+    <ProjectGuid>{64F56F8F-CB12-469F-A4B0-ED7963BE84D1}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>GPS</RootNamespace>
-    <AssemblyName>GPS</AssemblyName>
+    <RootNamespace>ParseGlabOutput</RootNamespace>
+    <AssemblyName>ParseGlabOutput</AssemblyName>
     <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
@@ -42,7 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Program.cs" />
+    <Compile Include="ParseGlabOutput.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
