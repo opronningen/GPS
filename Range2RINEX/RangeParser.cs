@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Globalization;
 
 namespace Range2RINEX
@@ -79,7 +78,6 @@ namespace Range2RINEX
 
     public class RangeParser
     {
-
         static TrackStat ParseTrackingState(int state)
         {
             TrackStat s = new TrackStat();
@@ -136,113 +134,7 @@ namespace Range2RINEX
             return s;
         }
 
-        /* 
-         * Parse a list of #RANGEA messages. Return list of Epoch
-         * If Epochs given, add to collection
-         * 
-         */
-
-        public static List<Epoch> Parse_old(List<string> lines, List<Epoch> epochs = null)
-        {
-            if (epochs == null)
-                epochs = new List<Epoch>();
-
-            foreach(string line in lines)
-            {
-                if (!line.StartsWith("#RANGEA"))
-                    continue;
-
-                // Check CRC of message
-                if (!CRCok(line))
-                {
-                    Console.Error.WriteLine("CRC failed.");
-                    continue;
-                }
-
-                string header = line.Split(';')[0];
-                string data = line.Split(new char[] { ';', '*' })[1];
-
-                string[] fields;
-                fields = header.Split(',');
-
-                Epoch e = new Epoch();
-                e.timestamp = new DateTime(1980, 1, 6, 0, 0, 0);
-                e.timestamp = e.timestamp.AddDays(int.Parse(fields[5]) * 7);
-                e.timestamp = e.timestamp.AddSeconds(double.Parse(fields[6]));
-
-                fields = data.Split(',');
-
-                int i = 1;  // Skip "number of observations to follow"
-                while (fields.Length - i > 9)
-                {
-                    int prn = int.Parse(fields[i++]);
-
-                    int glofreq = short.Parse(fields[i++]) - 7;
-
-                    Obs o = new Obs
-                    {
-                        psr = double.Parse(fields[i++]),
-                        psr_std = double.Parse(fields[i++]),
-                        adr = Math.Abs(double.Parse(fields[i++])),
-                        adr_std = double.Parse(fields[i++]),
-                        dopp = double.Parse(fields[i++]),
-                        snr = double.Parse(fields[i++]),
-                        locktime = float.Parse(fields[i++]),
-                        trackstat = ParseTrackingState(int.Parse(fields[i++], NumberStyles.HexNumber))
-                    };
-
-                    // For now, accept only 0 (GPS) or 1 (GLONASS)
-                    if (o.trackstat.SatelliteSystem > 1)
-                        continue;
-
-                    // Throw out observations that are not phaselocked..
-                    if (!o.trackstat.Phaselock)
-                        continue;
-
-                    // GLONASS PRN's are shown +37; fix.
-                    if (o.trackstat.SatelliteSystem == 1)
-                        prn -= 37;
-
-                    // o.trackstat.SatelliteSystem: 0 = GPS, 1 = GLONASS, 2 = WAAS, 7 = Other 
-                    char system = o.trackstat.SatelliteSystem == 0 ? 'G' : 'R';
-
-                    // Add observation to Sat, if already exists. Else create new
-                    Sat sat = e.SV.Find(s => (s.PRN == prn && s.System == system));
-                    if (sat == null)
-                    {
-                        sat = new Sat
-                        {
-                            System = system,
-                            PRN = prn
-                        };
-
-                        e.SV.Add(sat);
-                    }
-
-                    // Note - this will fail if tracking L5 - the documentation is not clear on what bits are set on L5 observations..
-                    // Signaltype may be 14 - to be verified.
-                    if (o.trackstat.PrimaryL1)
-                    {
-                        if (sat.L1 != null)
-                            Console.Error.WriteLine("Observation on L1 for PRN {0} already parsed!", prn);
-
-                        sat.L1 = o;
-                    }
-                    else
-                    {
-                        if (sat.L2 != null)
-                            Console.Error.WriteLine("Observation on L2 for PRN {0} already parsed!", prn);
-
-                        sat.L2 = o;
-                    }
-                }
-
-                epochs.Add(e);
-            }
-
-            return epochs;
-        }
-
+        //Parse a #RANGEA message. Return Epoch
         public static Epoch Parse(string line)
         {
             if (!line.StartsWith("#RANGEA"))
@@ -334,11 +226,13 @@ namespace Range2RINEX
             return e;
         }
 
+        // Parse #RANGEA, add to given list of Epoch
         public static void Parse(string line, List<Epoch> epochs)
         {
             epochs.Add(Parse(line));
         }
 
+        // Parse list of #RANGEA, return list of Epoch
         public static List<Epoch> Parse(List<string> lines, List<Epoch> epochs = null)
         {
             if (epochs == null)
@@ -355,16 +249,10 @@ namespace Range2RINEX
             return epochs;
         }
 
-        public RangeParser()
-        {
-            // Set cultureinfo to InvariantCulture, use dot as decimal separator in output and input
-            System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-        }
-
         #region Support methods
         /* --------------------------------------------------------------------------
-Calculate a CRC value to be used by CRC calculation functions.
--------------------------------------------------------------------------- */
+            Calculate a CRC value to be used by CRC calculation functions.
+        -------------------------------------------------------------------------- */
         const long CRC32_POLYNOMIAL = 0xEDB88320L;
         static ulong CRC32Value(int i)
         {
@@ -382,7 +270,7 @@ Calculate a CRC value to be used by CRC calculation functions.
         }
 
         /* --------------------------------------------------------------------------
-        Calculates the CRC-32 of a block of data all at once
+            Calculates the CRC-32 of a block of data all at once
         -------------------------------------------------------------------------- */
         static ulong CalculateBlockCRC32(string msg)
         {

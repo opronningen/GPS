@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Globalization;
 using Range2RINEX;
 
@@ -10,17 +7,14 @@ namespace Range2TEC
 {
     class Range2TEC
     {
-
         static void Main(string[] args)
         {
             // Set cultureinfo to InvariantCulture, use dot as decimal separator in output and input
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
-
             List<Epoch> epochs = new List<Epoch>();
 
             string line;
-            List<string> lines = new List<string>();
             while ((line = Console.ReadLine()) != null)
             {
                 RangeParser.Parse(line, epochs);

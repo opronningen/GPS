@@ -1,14 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Range2RINEX
 {
     partial class Range2RINEX
     {
-
+        /*
+         * Export a List of Epoch to RINEX 2.11 format
+         */
         static void ExportRinex(List<Epoch> epochs)
         {
 

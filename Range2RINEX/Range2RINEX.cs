@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Threading.Tasks;
 
 /*
  * Parse Range-message from Novatel OEMV.
@@ -27,6 +28,7 @@ namespace Range2RINEX
             // Gobble up stdin
             List<Epoch> epochs = new List<Epoch>();
             string line;
+
             while ((line = Console.ReadLine()) != null)
                 RangeParser.Parse(line, epochs);
 
