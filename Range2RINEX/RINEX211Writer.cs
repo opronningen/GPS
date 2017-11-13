@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Range2RINEX
 {
-    // Valid (GPS, GLONASS and SBAS observation-types in RINEX 2.11. Galileo not included
+    // Valid relevant (GPS L1/L2/L5, GLONASS L1/L2 and SBAS) observation-types in RINEX 2.11.
     public enum RINEX211ObsType
     {
         C1,     // Pseudorange C/A derived on L1 (GPS, GLONASS and SBAS)
@@ -34,7 +34,6 @@ namespace Range2RINEX
                 return s.Name;
             }
         }
-
 
         public RINEX211Sat(Sat s)
         {
@@ -69,8 +68,8 @@ namespace Range2RINEX
 
                     if (s.L1.locktime < 10)
                         LLI = 1;
-                    if (!s.L1.trackstat.ParityKnown || s.L1.trackstat.HalfCycleAdded)
-                        LLI += 2;
+                    //if (!s.L1.trackstat.ParityKnown || s.L1.trackstat.HalfCycleAdded)
+                    //    LLI += 2;
 
                     break;
 
@@ -118,8 +117,8 @@ namespace Range2RINEX
 
                     if (s.L2.locktime < 10)
                         LLI = 1;
-                    if (!s.L2.trackstat.ParityKnown || s.L2.trackstat.HalfCycleAdded)
-                        LLI += 2;
+                    //if (!s.L2.trackstat.ParityKnown || s.L2.trackstat.HalfCycleAdded)
+                    //    LLI += 2;
 
                     if (s.L2.trackstat.SignalType == 9)
                         LLI += 4;   //Antispoofing if tracking P-code codeless
@@ -161,8 +160,8 @@ namespace Range2RINEX
 
                     if (s.L5.locktime < 10)
                         LLI = 1;
-                    if (!s.L5.trackstat.ParityKnown || s.L5.trackstat.HalfCycleAdded)
-                        LLI += 2;
+                    //if (!s.L5.trackstat.ParityKnown || s.L5.trackstat.HalfCycleAdded)
+                    //    LLI += 2;
 
                     break;
 
@@ -270,40 +269,50 @@ namespace Range2RINEX
         public int AntNr = 1;
         public string AntType = "LEIAT502";
 
-        public RINEX211Log(List<Epoch> epochs)
+        public void Add(Epoch e)
         {
-            foreach(Epoch e in epochs)
-            {
-                var re = new RINEX211Epoch(e);
-                this.Add(re);
+            if (e == null)
+                return;
 
-                // Record all sats seen
-                re.ForEach(s => { if (!SatList.Contains(s.Name)) SatList.Add(s.Name); });
+            var re = new RINEX211Epoch(e);
+            this.Add(re);
 
-                // Record all observation-types seen
-                if (!ObsTypeList.Contains(RINEX211ObsType.C1))           // Only look for L1 observations if not already seen
-                    if (e.Exists(a => a.L1 != null))
-                        ObsTypeList.AddRange(new[] { RINEX211ObsType.C1, RINEX211ObsType.L1, RINEX211ObsType.D1, RINEX211ObsType.S1 });
+            // Record all sats seen
+            re.ForEach(s => { if (!SatList.Contains(s.Name)) SatList.Add(s.Name); });
 
-                if (!ObsTypeList.Contains(RINEX211ObsType.C5))
-                    if (e.Exists(a => a.L5 != null))
-                        ObsTypeList.AddRange(new[] { RINEX211ObsType.C5, RINEX211ObsType.L5, RINEX211ObsType.D5, RINEX211ObsType.S5 });
+            // Record all observation-types seen
+            if (!ObsTypeList.Contains(RINEX211ObsType.C1))           // Only look for L1 observations if not already seen
+                if (e.Exists(a => a.L1 != null))
+                    ObsTypeList.AddRange(new[] { RINEX211ObsType.C1, RINEX211ObsType.L1, RINEX211ObsType.D1, RINEX211ObsType.S1 });
 
-                if (!ObsTypeList.Contains(RINEX211ObsType.L2))
-                    if (e.Exists(a => a.L2 != null))
-                        ObsTypeList.AddRange(new[] { RINEX211ObsType.L2, RINEX211ObsType.D2, RINEX211ObsType.S2});
+            if (!ObsTypeList.Contains(RINEX211ObsType.C5))
+                if (e.Exists(a => a.L5 != null))
+                    ObsTypeList.AddRange(new[] { RINEX211ObsType.C5, RINEX211ObsType.L5, RINEX211ObsType.D5, RINEX211ObsType.S5 });
 
-                // L2 will have P2 or C2, in addition to L2, D2 and S2 - some sats may track C2 if configured (L2C)
-                if (!ObsTypeList.Contains(RINEX211ObsType.P2))
-                    if (e.Exists(a => a.L2 != null && (a.L2.trackstat.SignalType == 5 || a.L2.trackstat.SignalType == 9)))
-                        ObsTypeList.Add(RINEX211ObsType.P2);
+            if (!ObsTypeList.Contains(RINEX211ObsType.L2))
+                if (e.Exists(a => a.L2 != null))
+                    ObsTypeList.AddRange(new[] { RINEX211ObsType.L2, RINEX211ObsType.D2, RINEX211ObsType.S2 });
 
-                if (!ObsTypeList.Contains(RINEX211ObsType.C2))
-                    if (e.Exists(a => a.L2 != null && a.L2.trackstat.SignalType == 17))
-                        ObsTypeList.Add(RINEX211ObsType.C2);
-            }
+            // L2 will have P2 or C2, in addition to L2, D2 and S2 - some sats may track C2 if configured (L2C)
+            if (!ObsTypeList.Contains(RINEX211ObsType.P2))
+                if (e.Exists(a => a.L2 != null && (a.L2.trackstat.SignalType == 5 || a.L2.trackstat.SignalType == 9)))
+                    ObsTypeList.Add(RINEX211ObsType.P2);
+
+            if (!ObsTypeList.Contains(RINEX211ObsType.C2))
+                if (e.Exists(a => a.L2 != null && a.L2.trackstat.SignalType == 17))
+                    ObsTypeList.Add(RINEX211ObsType.C2);
 
             ObsTypeList.Sort();
+        }
+
+        public RINEX211Log(List<Epoch> epochs)
+        {
+            foreach (Epoch e in epochs)
+                this.Add(e);
+        }
+
+        public RINEX211Log()
+        {
         }
 
         public string GetHeaderAsString()
@@ -326,10 +335,14 @@ namespace Range2RINEX
             foreach(RINEX211ObsType o in ObsTypeList)
             {
                 sb.AppendFormat("{0,6}", o.ToString());
-                if(++n > 8 && ObsTypeList.IndexOf(o) > ObsTypeList.Count()-1)
+                if(++n > 8 )
                 {
-                    sb.Append("# / TYPES OF OBSERV\n");
-                    sb.AppendFormat("{0,6}", "");
+                    if(ObsTypeList.IndexOf(o) < ObsTypeList.Count() - 1)
+                    {
+                        sb.Append("# / TYPES OF OBSERV\n");
+                        sb.AppendFormat("{0,6}", "");
+                    }
+
                     n = 0;
                 }
             }

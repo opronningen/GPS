@@ -55,17 +55,6 @@ namespace NovLog
         }
 
         /*
-         * To do:
-         * 1. Handle several "log-streams":
-         *      - Create output logfilename after message+date: "RANGEA 2017.11.09.txt"
-         *      - Parse inifile for logs to reqest, "rangea ontime 5"
-         * 2. Assign Block IIF sats to L5 channels
-         *      - Parse RANGEA-message 
-         *      - Find Block IIF sats
-         *      - Select top 6 based on L1 SNR
-         *      - Assign
-         *      - Keep assignment untill sats fall below horizon
-         *      - Repeat when channel becomes idle
          */
 
         static void Main(string[] args)
@@ -119,6 +108,9 @@ namespace NovLog
             int L5interval = 0;
             int L5obsCnt = 0;
 
+            RangeParser rp = new RangeParser();
+            rp.ParseL5 = true;
+
             while (true)
             {
                 string line = gps.ReadLine().Trim();
@@ -142,7 +134,7 @@ namespace NovLog
                 // Process RANGEA special - assign the strongest Block IIR SNR sats to the L5 channels
                 if (line.StartsWith("#RANGEA"))
                 {
-                    Epoch e = RangeParser.Parse(line);
+                    Epoch e = rp.Parse(line);
                     L5obsCnt += e.Count(s => s.L5 != null);
 
                     if (--L5interval < 0)

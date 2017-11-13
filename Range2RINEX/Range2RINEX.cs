@@ -10,11 +10,12 @@ using System.Threading.Tasks;
  *  GLONASS handled correct
  *  
  * To do:
- *      Handle GPS L2C
- *      Handle GPS L5
- *      Handle SBAS
+ *      OK Handle GPS L2C
+ *      OK Handle GPS L5
+ *      OK Handle SBAS
  *      Parse RangeCMP
  *      Parse binary format
+ *      Parse Receiver Status-field
  * 
  */
 namespace Range2RINEX
@@ -24,15 +25,14 @@ namespace Range2RINEX
         static void Main(string[] args)
         {
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
-            
+
+            RangeParser rp = new RangeParser();
+            RINEX211Log rl = new RINEX211Log();
+
             // Gobble up stdin
-            List<Epoch> epochs = new List<Epoch>();
             string line;
-
             while ((line = Console.ReadLine()) != null)
-                RangeParser.Parse(line, epochs);
-
-            RINEX211Log rl = new RINEX211Log(epochs);
+                rl.Add(rp.Parse(line));
 
             rl.WriteLog();
 

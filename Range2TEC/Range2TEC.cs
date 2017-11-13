@@ -15,9 +15,12 @@ namespace Range2TEC
             List<Epoch> epochs = new List<Epoch>();
 
             string line;
+            RangeParser rp = new RangeParser();
             while ((line = Console.ReadLine()) != null)
             {
-                RangeParser.Parse(line, epochs);
+                Epoch e = rp.Parse(line);
+                if(e != null)
+                    epochs.Add(e);
             }
 
             // Output TEC estimate

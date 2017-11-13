@@ -28,7 +28,7 @@ namespace Range2RINEX
         Standard,
         Narrow,
         Reserved,
-        PAC             /* Pulse Aprerture Correlator */
+        PAC             /* Pulse Aperture Correlator */
     }
 
     public class TrackStat
@@ -115,12 +115,13 @@ namespace Range2RINEX
 
     public class RangeParser
     {
-        public static bool ParseL5 = true;      // Parse or ignore L5 observations
-        public static bool ParseSBAS = true;    // Parse or ignore SBAS observations
-        public static bool L2CisP2 = false;     // "Mask" L2C observations as P2 observations
+        public bool ParseGLO = true;    // Parse or ignore GLONASS observations
+        public bool ParseL5 = true;     // Parse or ignore L5 observations
+        public bool ParseSBAS = true;   // Parse or ignore SBAS observations
+        public bool L2CisP2 = false;    // "Mask" L2C observations as P2 observations
 
         //Parse a #RANGEA message. Return Epoch
-        public static Epoch Parse(string line)
+        public Epoch Parse(string line)
         {
             if (!line.StartsWith("#RANGEA"))
                 return null;
@@ -160,6 +161,9 @@ namespace Range2RINEX
 
                 // Accept GPS, GLONASS, SBAS
                 if (o.trackstat.SatelliteSystem > 2)
+                    continue;
+
+                if (!ParseGLO && o.trackstat.SatelliteSystem == 1)
                     continue;
 
                 if (!ParseSBAS && o.trackstat.SatelliteSystem == 2)
@@ -222,29 +226,6 @@ namespace Range2RINEX
             }
 
             return e;
-        }
-
-        // Parse #RANGEA, add to given list of Epoch
-        public static void Parse(string line, List<Epoch> epochs)
-        {
-            epochs.Add(Parse(line));
-        }
-
-        // Parse list of #RANGEA, return list of Epoch
-        public static List<Epoch> Parse(List<string> lines, List<Epoch> epochs = null)
-        {
-            if (epochs == null)
-                epochs = new List<Epoch>();
-
-            foreach(string line in lines)
-            {
-                Epoch e = Parse(line);
-
-                if (e != null)
-                    epochs.Add(e);
-            }
-
-            return epochs;
         }
 
         #region Support methods
