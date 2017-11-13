@@ -18,7 +18,7 @@ namespace Range2RINEX
 
             // Count satellites
             List<string> satList = new List<string>();
-            epochs.ForEach(e => e.SV.ForEach(s => { string sat = String.Format("{0}{1}", s.System, s.PRN); if (!satList.Contains(sat)) { satList.Add(sat); } }));
+            epochs.ForEach(e => e.ForEach(s => { string sat = String.Format("{0}{1}", s.System, s.PRN); if (!satList.Contains(sat)) { satList.Add(sat); } }));
             
             // Header
             Console.WriteLine("{0,9}{1,11}{2,-20}{3,-20}{4,-20}", "2.11", "", "OBSERVATION DATA", "M (MIXED)", "RINEX VERSION / TYPE");
@@ -54,9 +54,6 @@ namespace Range2RINEX
             // C1    L1    D1    S1    P2    L2    D2    S2 
             foreach (Epoch e in epochs)
             {
-                string sats = "";
-                
-
                 // Epoch header
                 Console.Write(" {0,2:00} {1,2} {2,2} {3,2} {4,2}{5,11:F7}  0{6,3}",
                     e.timestamp.Year - 2000,
@@ -65,13 +62,14 @@ namespace Range2RINEX
                     e.timestamp.Hour,
                     e.timestamp.Minute,
                     e.timestamp.Second,
-                    e.SV.Count);
+                    e.Count);
 
                 // If > 12 sats, use continuation-lines
+                string sats = "";
                 int written = 0;
-                while(written < e.SV.Count)
+                while(written < e.Count)
                 {
-                    List<Sat> toWrite = e.SV.Skip(written).Take(e.SV.Count - written > 12 ? 12: e.SV.Count - written).ToList<Sat>();
+                    List<Sat> toWrite = e.Skip(written).Take(e.Count - written > 12 ? 12: e.Count - written).ToList<Sat>();
                     written += toWrite.Count();
                     toWrite.ForEach(s => sats += String.Format("{0}{1:00}", s.System, s.PRN));
                     Console.WriteLine(sats);
@@ -81,7 +79,7 @@ namespace Range2RINEX
                 int snr = 0;
 
                 // Observations
-                foreach (Sat s in e.SV)
+                foreach (Sat s in e)
                 {
                     // Loss of Lock indicators:
                     // Bit 0: Lost lock between previous and current observation: cycle slip possible
@@ -121,7 +119,6 @@ namespace Range2RINEX
                     }
 
                     // max 5 observations per line - C1 L1 D1 S1 P2
-
                     if (s.L1 != null)
                     {
                         snr = (int)Math.Min(Math.Max(Math.Round(s.L1.snr / 6.0), 0), 9);

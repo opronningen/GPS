@@ -33,7 +33,7 @@ namespace Range2RINEX
 
     public class TrackStat
     {
-        public TrackingState trackingstate = 0;
+        public TrackingState State = 0;
         public int SVchnum = 0;
         public bool Phaselock = false;
         public bool ParityKnown = false;
@@ -41,12 +41,29 @@ namespace Range2RINEX
         public CorrelatorType Correlator = CorrelatorType.NA;
         public int SatelliteSystem = 0;
         public bool Grouped = false;
-        public int SignalType = 0;              // GPS: 0 = L1 C/A, 5 = L2 P, 9 = L2 P codeless, 14 = L5??, 17 = L2C. GLONASS: 0 = L1 C/A, 5 = L2 P. SBAS: 0 = L1 C/A
+        public int SignalType = 0;              // GPS: 0 = L1 C/A, 5 = L2 P, 9 = L2 P codeless, 14 = L5, 17 = L2C. GLONASS: 0 = L1 C/A, 5 = L2 P. SBAS: 0 = L1 C/A
         public bool FEC = false;
         public bool HalfCycleAdded = false;
-        public bool PrimaryL1 = false;          // L1 if true, L2 if false
+        public bool PrimaryL1 = false;          // L1 (or L5) if true, L2 if false
         public bool PRNlocked = false;
         public bool ChannelForced = false;
+
+        public TrackStat (int state) { 
+            State = (TrackingState)(state & 31);
+            SVchnum = (state >>= 5) & 31;
+            Phaselock = ((state >>= 5) & 1) > 0;
+            ParityKnown = ((state >>= 1) & 1) > 0;
+            CodeLocked = ((state >>= 1) & 1) > 0;
+            Correlator = (CorrelatorType)((state >>= 1) & 7);
+            SatelliteSystem = ((state >>= 3) & 7);
+            Grouped = ((state >>= 4) & 1) > 0;
+            SignalType = ((state >>= 1) & 31);
+            FEC = ((state >>= 5) & 1) > 0;
+            PrimaryL1 = ((state >>= 1) & 1) > 0;
+            HalfCycleAdded = ((state >>= 1) & 1) > 0;
+            PRNlocked = ((state >>= 2) & 1) > 0;
+            ChannelForced = ((state >>= 1) & 1) > 0;
+        }
     }
 
     public class Obs
@@ -63,76 +80,44 @@ namespace Range2RINEX
 
     public class Sat
     {
-        public int PRN;     // For GPS, PRN. For GLONASS, slot-number.
-        public char System; // From RINEX-standard; G=GPS, R=GLONASS, S=SBAS
+        public string Name
+        {
+            get
+            {
+                return (String.Format("{0}{1:00}", System, PRN));
+            }
+        }
+
+        public int PRN;                 // For GPS, PRN. For GLONASS, slot-number.
+        public char System = ' ';       // From RINEX-standard; G=GPS, R=GLONASS, S=SBAS
         public Obs L1;
         public Obs L2;
+        public Obs L5;
+
+        public Sat(char system, int prn)
+        {
+            System = system;
+            PRN = prn;
+        }
     }
 
-    public class Epoch
+    public class Epoch : List<Sat>
     {
-        public DateTime timestamp;
-        public List<Sat> SV = new List<Sat>();
+        public DateTime timestamp = new DateTime(1980, 1, 6, 0, 0, 0);
+
+        public Epoch(int GPSWeek, double GPSsecs)
+        {
+            timestamp = timestamp.AddDays(GPSWeek*7);
+            timestamp = timestamp.AddSeconds(GPSsecs);
+        }
     }
     #endregion
 
     public class RangeParser
     {
-        static TrackStat ParseTrackingState(int state)
-        {
-            TrackStat s = new TrackStat();
-
-            // Tracking state
-            s.trackingstate = (TrackingState)(state & 31);
-            state >>= 5;
-
-            // SV channel number
-            s.SVchnum = state & 31;
-            state >>= 5;
-
-            s.Phaselock = (state & 1) > 0;
-            state >>= 1;
-
-            s.ParityKnown = (state & 1) > 0;
-            state >>= 1;
-
-            s.CodeLocked = (state & 1) > 0;
-            state >>= 1;
-
-            s.Correlator = (CorrelatorType)(state & 7);
-            state >>= 3;
-
-            s.SatelliteSystem = (state & 7);
-            state >>= 3;
-
-            // Skip reserved bit
-            state >>= 1;
-
-            s.Grouped = (state & 1) > 0;
-            state >>= 1;
-
-            s.SignalType = (state & 31);
-            state >>= 5;
-
-            s.FEC = (state & 1) > 0;
-            state >>= 1;
-
-            s.PrimaryL1 = (state & 1) > 0;
-            state >>= 1;
-
-            s.HalfCycleAdded = (state & 1) > 0;
-            state >>= 1;
-
-            // Skip reserved
-            state >>= 1;
-
-            s.PRNlocked = (state & 1) > 0;
-            state >>= 1;
-
-            s.ChannelForced = (state & 1) > 0;
-
-            return s;
-        }
+        public static bool ParseL5 = true;      // Parse or ignore L5 observations
+        public static bool ParseSBAS = true;    // Parse or ignore SBAS observations
+        public static bool L2CisP2 = false;     // "Mask" L2C observations as P2 observations
 
         //Parse a #RANGEA message. Return Epoch
         public static Epoch Parse(string line)
@@ -150,10 +135,7 @@ namespace Range2RINEX
             string header = line.Split(';')[0];
             string[] fields = header.Split(',');
 
-            Epoch e = new Epoch();
-            e.timestamp = new DateTime(1980, 1, 6, 0, 0, 0);
-            e.timestamp = e.timestamp.AddDays(int.Parse(fields[5]) * 7);
-            e.timestamp = e.timestamp.AddSeconds(double.Parse(fields[6]));
+            Epoch e = new Epoch(int.Parse(fields[5]), double.Parse(fields[6]));
 
             string data = line.Split(new char[] { ';', '*' })[1];
             fields = data.Split(',');
@@ -162,7 +144,6 @@ namespace Range2RINEX
             while (fields.Length - i > 9)
             {
                 int prn = int.Parse(fields[i++]);
-
                 int glofreq = short.Parse(fields[i++]) - 7;
 
                 Obs o = new Obs
@@ -174,45 +155,62 @@ namespace Range2RINEX
                     dopp = double.Parse(fields[i++]),
                     snr = double.Parse(fields[i++]),
                     locktime = float.Parse(fields[i++]),
-                    trackstat = ParseTrackingState(int.Parse(fields[i++], NumberStyles.HexNumber))
+                    trackstat = new TrackStat(int.Parse(fields[i++], NumberStyles.HexNumber))
                 };
 
-                // For now, accept only 0 (GPS) or 1 (GLONASS)
-                if (o.trackstat.SatelliteSystem > 1)
+                // Accept GPS, GLONASS, SBAS
+                if (o.trackstat.SatelliteSystem > 2)
                     continue;
+
+                if (!ParseSBAS && o.trackstat.SatelliteSystem == 2)
+                    continue;
+
+                if (!ParseL5 && o.trackstat.SignalType == 14)
+                    continue;
+
+                if (o.trackstat.SignalType == 17 && L2CisP2)
+                    o.trackstat.SignalType = 9;
 
                 // Throw out observations that are not phaselocked..
                 if (!o.trackstat.Phaselock)
                     continue;
 
-                // GLONASS PRN's are shown +37; fix.
+                // o.trackstat.SatelliteSystem: 0 = GPS, 1 = GLONASS, 2 = WAAS, 7 = Other
+                char system = 'G';                          // Default to GPS
                 if (o.trackstat.SatelliteSystem == 1)
-                    prn -= 37;
-
-                // o.trackstat.SatelliteSystem: 0 = GPS, 1 = GLONASS, 2 = WAAS, 7 = Other 
-                char system = o.trackstat.SatelliteSystem == 0 ? 'G' : 'R';
-
-                // Add observation to Sat, if already exists. Else create new
-                Sat sat = e.SV.Find(s => (s.PRN == prn && s.System == system));
-                if (sat == null)
                 {
-                    sat = new Sat
-                    {
-                        System = system,
-                        PRN = prn
-                    };
-
-                    e.SV.Add(sat);
+                    prn -= 37;                              // GLONASS PRN's are shown +37; fix.
+                    system = 'R';
+                }
+                else if(o.trackstat.SatelliteSystem == 2)
+                {
+                    prn -= 100;                             // SBAS should be reported -100, according to spec
+                    system = 'S';
                 }
 
-                // Note - this will fail if tracking L5 - the documentation is not clear on what bits are set on L5 observations..
-                // Signaltype may be 14 - to be verified.
+                // Add observation to Sat, if already exists. Else create new
+                Sat sat = e.Find(s => (s.PRN == prn && s.System == system));
+                if (sat == null)
+                {
+                    sat = new Sat(system, prn);
+
+                    e.Add(sat);
+                }
+
                 if (o.trackstat.PrimaryL1)
                 {
-                    if (sat.L1 != null)
-                        Console.Error.WriteLine("Observation on L1 for PRN {0} already parsed!", prn);
+                    if(o.trackstat.SignalType == 14)
+                    {
+                        sat.L5 = o;
+                    }
+                    else
+                    {
+                        // If a sat is manually assigned to a channel, we might see more than one observation of each type for the same sat. 
+                        if (sat.L1 != null)
+                            Console.Error.WriteLine("Observation on L1 for PRN {0} already parsed!", prn);
 
-                    sat.L1 = o;
+                        sat.L1 = o;
+                    }
                 }
                 else
                 {
@@ -289,9 +287,12 @@ namespace Range2RINEX
             return (ulCRC);
         }
 
-        static bool CRCok(string message)
+        public static bool CRCok(string message)
         {
             string[] parts = message.Split('*');
+            if (parts.Length != 2)
+                return false;
+
             string msg = parts[0].TrimStart('#');
             ulong crc = ulong.Parse(parts[1], NumberStyles.HexNumber);
 

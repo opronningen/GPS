@@ -31,7 +31,7 @@ namespace Range2TEC
                 double[] codeTECs = new double[33];
                 double[] phaseTECs = new double[33];
 
-                foreach (Sat s in e.SV)
+                foreach (Sat s in e)
                 {
                     // Only GPS for now
                     if (s.System != 'G')

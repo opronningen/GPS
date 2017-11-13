@@ -32,8 +32,12 @@ namespace Range2RINEX
             while ((line = Console.ReadLine()) != null)
                 RangeParser.Parse(line, epochs);
 
+            RINEX211Log rl = new RINEX211Log(epochs);
+
+            rl.WriteLog();
+
             // Output RINEX
-            ExportRinex(epochs);
+            //ExportRinex(epochs);
         }
     }
 }
