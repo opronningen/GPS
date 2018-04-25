@@ -4,14 +4,13 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{DAF11F7B-276E-4818-BFD5-2B3095742B1A}</ProjectGuid>
+    <ProjectGuid>{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>Range2RINEX</RootNamespace>
-    <AssemblyName>Range2RINEX</AssemblyName>
-    <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
+    <RootNamespace>ConcatCorr</RootNamespace>
+    <AssemblyName>ConcatCorr</AssemblyName>
+    <TargetFrameworkVersion>v4.6.2</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
-    <TargetFrameworkProfile />
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
     <PlatformTarget>AnyCPU</PlatformTarget>
@@ -43,10 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Range2RINEX.cs" />
+    <Compile Include="ConcatCorr.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="RangeParser.cs" />
-    <Compile Include="RINEX211Writer.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

@@ -13,6 +13,7 @@ namespace NovLog
     class Log
     {
         public string name = "";
+        public string filepath = "";
         public StreamWriter logFile;
         public DateTime logFileDate;
         public string request;
@@ -21,6 +22,7 @@ namespace NovLog
     class NovLog
     {
         static string logDir = "";
+        static bool debug = false;
 
         static StreamWriter errLog = null;
         static void LogError(string msg)
@@ -42,13 +44,20 @@ namespace NovLog
 
         static void OpenLogfile(Log log, DateTime timestamp)
         {
+            string filename = String.Format("{0} {1}.{2,1:D2}.{3,1:D2}.tmp", log.name, timestamp.Year, timestamp.Month, timestamp.Day);
+            string datafile = Path.Combine(logDir, filename);
+
             if (log.logFile != null)
+            {
                 log.logFile.Close();
 
-            string filename = String.Format("{0} {1}.{2,1:D2}.{3,1:D2}.asc", log.name, timestamp.Year, timestamp.Month, timestamp.Day);
-            string datafile = Path.Combine(logDir, filename);
+                // If new day, rename old logfile
+                if (!log.filepath.Equals(datafile))
+                    System.IO.File.Move(log.filepath, log.filepath.Replace(".tmp", ".asc"));  // Will fail if full path contains ".tmp"..
+            }
+
             log.logFile = new StreamWriter(datafile, true);
-            log.logFile.AutoFlush = true;
+            log.filepath = datafile;
             log.logFileDate = timestamp.Date;
 
             LogError(String.Format("Opening logfile {0}", datafile));
@@ -90,7 +99,10 @@ namespace NovLog
                 logs.Add(l);
             }
 
-                // Open serialport
+            debug = bool.Parse(iniData["NovLog"]["debug"]);
+            bool autol5 = bool.Parse(iniData["NovLog"]["auto-L5"]);
+
+            // Open serialport
             SerialPort gps = new SerialPort(iniData["NovLog"]["com-port"]);
             gps.Open();
 
@@ -109,16 +121,17 @@ namespace NovLog
             int L5obsCnt = 0;
 
             RangeParser rp = new RangeParser();
-            rp.ParseL5 = true;
+            rp.ParseL5 = autol5;
 
             while (true)
             {
                 string line = gps.ReadLine().Trim();
-                string[] words = line.Split(',');
-
+                
                 // Check CRC, skip junk
                 if(!RangeParser.CRCok(line))
                     continue;
+
+                string[] words = line.Split(',');
 
                 // Find Log-object. If not found, skip line
                 Log log = logs.Find(s => s.name.Equals(words[0].TrimStart('#')));
@@ -132,17 +145,19 @@ namespace NovLog
                 log.logFile.WriteLine(line);
 
                 // Process RANGEA special - assign the strongest Block IIR SNR sats to the L5 channels
-                if (line.StartsWith("#RANGEA"))
+                if (autol5 && line.StartsWith("#RANGEA"))
                 {
                     Epoch e = rp.Parse(line);
                     L5obsCnt += e.Count(s => s.L5 != null);
 
-                    if (--L5interval < 0)
+                    if (--L5interval < 1)
                         L5interval = 30;
                     else
                         continue;
 
-                    Console.WriteLine("{0} Evaluating L5 channels,  {1} observations since last", DateTime.Now, L5obsCnt);
+                    if(debug)
+                        Console.WriteLine("{0} Evaluating L5 channels,  {1} observations since last", DateTime.Now, L5obsCnt);
+
                     L5obsCnt = 0;
 
                     // Check to see that the sats we've assigned to the L5 channels are still being tracked
@@ -153,7 +168,8 @@ namespace NovLog
 
                         if (e.Find(s => s.PRN == L5channels[i]) == null)
                         {
-                            Console.WriteLine("Not traking PRN {0} on channel {1}", L5channels[i], i + 14);
+                            if (debug)
+                                Console.WriteLine("Not tracking PRN {0} on channel {1}", L5channels[i], i + 14);
                             L5channels[i] = 0;
                         }
                     }
@@ -175,7 +191,10 @@ namespace NovLog
                                 break;
 
                             L5channels[i] = c[ix++].PRN;
-                            Console.WriteLine("Assigning PRN {0} to channel {1}", L5channels[i], i + 14);
+
+                            if (debug)
+                                Console.WriteLine("Assigning PRN {0} to channel {1}", L5channels[i], i + 14);
+
                             gps.Write(String.Format("assign {0} {1}\r\n", i + 14, L5channels[i]));
                         }
                 }

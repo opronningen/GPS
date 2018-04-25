@@ -118,7 +118,6 @@ namespace Range2RINEX
         public bool ParseGLO = true;    // Parse or ignore GLONASS observations
         public bool ParseL5 = true;     // Parse or ignore L5 observations
         public bool ParseSBAS = true;   // Parse or ignore SBAS observations
-        public bool L2CisP2 = false;    // "Mask" L2C observations as P2 observations
 
         //Parse a #RANGEA message. Return Epoch
         public Epoch Parse(string line)
@@ -172,11 +171,8 @@ namespace Range2RINEX
                 if (!ParseL5 && o.trackstat.SignalType == 14)
                     continue;
 
-                if (o.trackstat.SignalType == 17 && L2CisP2)
-                    o.trackstat.SignalType = 9;
-
-                // Throw out observations that are not phaselocked..
-                if (!o.trackstat.Phaselock)
+                // Throw out observations where parity is unknown
+                if ( !o.trackstat.ParityKnown)
                     continue;
 
                 // o.trackstat.SatelliteSystem: 0 = GPS, 1 = GLONASS, 2 = WAAS, 7 = Other

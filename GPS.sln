@@ -13,6 +13,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RemoveOutliers", "RemoveOut
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Range2TEC", "Range2TEC\Range2TEC.csproj", "{A3226D22-E8E8-40D8-AB3C-5B952C54F4D0}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ConcatCorr", "ConcatCorr\ConcatCorr.csproj", "{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -39,6 +41,10 @@ Global
 		{A3226D22-E8E8-40D8-AB3C-5B952C54F4D0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A3226D22-E8E8-40D8-AB3C-5B952C54F4D0}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A3226D22-E8E8-40D8-AB3C-5B952C54F4D0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7DB4A64E-292A-40EF-8DD0-CEBBE49116F8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

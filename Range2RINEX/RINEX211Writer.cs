@@ -23,9 +23,10 @@ namespace Range2RINEX
         D5,     // Pseudorange C/A-derived on L1
         S5      // SNR on L5
     }
-    // Implement some RINEX211 specifics
+    // Implement some RINEX 2.11 specifics
     class RINEX211Sat {
         Sat s;
+        public bool Event = false;  // Flag if event needs to be included in the RINEX-file, such as change of sampling interval etc. Not implemented
 
         public string Name
         {
@@ -56,6 +57,9 @@ namespace Range2RINEX
 
                     obs = s.L1.psr;
                     strength = s.L1.snr;
+
+                    if (s.L1.locktime < 10)
+                        LLI = 1;
 
                     break;
 
@@ -94,6 +98,9 @@ namespace Range2RINEX
                     obs = s.L2.psr;
                     strength = s.L2.snr;
 
+                    if (s.L2.locktime < 10)
+                        LLI = 1;
+
                     if (s.L2.trackstat.SignalType == 9)
                         LLI += 4;   // Antispoofing
 
@@ -105,6 +112,9 @@ namespace Range2RINEX
 
                     obs = s.L2.psr;
                     strength = s.L2.snr;
+
+                    if (s.L2.locktime < 10)
+                        LLI = 1;
 
                     break;
 
@@ -183,7 +193,7 @@ namespace Range2RINEX
             if (obs == 0)
                 return String.Format("{0,16}", "");
             else
-                return String.Format("{0,14:F3}{1,1:#}{2,1:#}", obs, LLI, (int)Math.Min(Math.Max(Math.Round(strength / 6.0), 0), 9));
+                return String.Format("{0,14:F3}{1,1:#}{2,1:#}", obs, LLI, strength == 0?0:(int)Math.Min(Math.Max(Math.Round((strength-29) / 2.22222), 1), 9));
         }
     }
 
@@ -259,9 +269,10 @@ namespace Range2RINEX
         List<RINEX211ObsType> ObsTypeList = new List<RINEX211ObsType>();    // List of all observation-types seen
         int interval = 10;
 
-        public double PosX = 0;
-        public double PosY = 0;
-        public double PosZ = 0;
+        // Information that goes into the RINEX header.
+        public double PosX = 3239768.2710;
+        public double PosY = 301305.8311;
+        public double PosZ = 5467528.5715;
         public int RecNr = 1;
         public string RecType = "NOV OEMV3";
         public double RecVers = 3.907;
@@ -269,16 +280,27 @@ namespace Range2RINEX
         public int AntNr = 1;
         public string AntType = "LEIAT502";
 
+        // Processing options
+        public bool C2isP2 = false;                                         // "Mask" L2C-derived pseudoranges as P-code derived pseudorange
+
         public void Add(Epoch e)
         {
             if (e == null)
                 return;
 
-            var re = new RINEX211Epoch(e);
-            this.Add(re);
+            if(C2isP2)
+                e.ForEach(s => { if (s.L2 != null && s.L2.trackstat.SignalType == 17) { s.L2.trackstat.SignalType = 5; } });
 
+            var re = new RINEX211Epoch(e);
+            
             // Record all sats seen
             re.ForEach(s => { if (!SatList.Contains(s.Name)) SatList.Add(s.Name); });
+
+            // Infer sampling interval, once
+            if (this.Count == 1)
+                interval = (re.timestamp - this.First().timestamp).Seconds;
+
+            this.Add(re);
 
             // Record all observation-types seen
             if (!ObsTypeList.Contains(RINEX211ObsType.C1))           // Only look for L1 observations if not already seen
@@ -346,7 +368,9 @@ namespace Range2RINEX
                     n = 0;
                 }
             }
-            sb.Append(' ', (9-n)*6);
+            if(n > 0)
+                sb.Append(' ', (int)(9-n)*6);
+
             sb.Append("# / TYPES OF OBSERV\n");
 
             sb.AppendFormat("{0,10}{1, 50}{2,-20}\n", interval, "", "INTERVAL");

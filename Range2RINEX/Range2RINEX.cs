@@ -15,7 +15,6 @@ using System.Threading.Tasks;
  *      OK Handle SBAS
  *      Parse RangeCMP
  *      Parse binary format
- *      Parse Receiver Status-field
  * 
  */
 namespace Range2RINEX
@@ -27,7 +26,11 @@ namespace Range2RINEX
             System.Threading.Thread.CurrentThread.CurrentCulture = CultureInfo.InvariantCulture;
 
             RangeParser rp = new RangeParser();
+            rp.ParseL5 = true;
+            
+
             RINEX211Log rl = new RINEX211Log();
+            //rl.C2isP2 = true;
 
             // Gobble up stdin
             string line;
